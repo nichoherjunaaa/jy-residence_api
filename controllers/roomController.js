@@ -1,47 +1,92 @@
 const Room = require("../models/Room");
+const { put, del } = require('@vercel/blob');
 
-// Create a room
 const createRoom = async (req, res) => {
+    // 1. Validasi input
     if (!req.body.name || !req.body.price || !req.body.type || !req.body.capacity) {
         return res.status(400).json("Please fill all required fields!");
     }
 
     try {
-        let images = [];
-        if (req.files) {
-            images = req.files.map(file => `/uploads/${file.filename}`);
+        let imageUrls = [];
+
+        if (req.files && req.files.length > 0) {
+            imageUrls = await Promise.all(
+                req.files.map(async (file) => {
+                    const blob = await put(`rooms/${Date.now()}-${file.originalname}`, file.buffer, {
+                        access: 'public',
+                        contentType: file.mimetype
+                    });
+                    return blob.url;
+                })
+            );
         }
 
         const newRoom = new Room({
             ...req.body,
-            images: images
+            images: imageUrls
         });
 
         const savedRoom = await newRoom.save();
         res.status(200).json(savedRoom);
+
     } catch (err) {
-        res.status(500).json(err);
+        console.error("Upload Error:", err);
+        res.status(500).json({ message: "Internal Server Error", error: err.message });
     }
 };
 
-// Update a room
+
 const updateRoom = async (req, res) => {
     try {
+        const roomId = req.params.id;
+
+        // 1. Cari data lama untuk mendapatkan URL gambar lama
+        const oldRoom = await Room.findById(roomId);
+        if (!oldRoom) return res.status(404).json("Room not found!");
+
         let updateData = { ...req.body };
 
+        // 2. Cek apakah ada file baru yang diunggah
         if (req.files && req.files.length > 0) {
-            const images = req.files.map(file => `/uploads/${file.filename}`);
-            updateData.images = images;
+
+            // A. Hapus gambar lama dari Vercel Blob (opsional tapi disarankan)
+            if (oldRoom.images && oldRoom.images.length > 0) {
+                try {
+                    // del() bisa menerima array URL untuk menghapus banyak file sekaligus
+                    await Promise.all(oldRoom.images.map(url => del(url)));
+                } catch (delError) {
+                    console.error("Gagal menghapus file lama:", delError);
+                    // Lanjut saja, jangan hentikan proses update jika hapus gagal
+                }
+            }
+
+            // B. Upload gambar-gambar baru
+            const newImageUrls = await Promise.all(
+                req.files.map(async (file) => {
+                    const blob = await put(`rooms/${Date.now()}-${file.originalname}`, file.buffer, {
+                        access: 'public',
+                        contentType: file.mimetype
+                    });
+                    return blob.url;
+                })
+            );
+
+            // Masukkan array URL baru ke data yang akan di-update
+            updateData.images = newImageUrls;
         }
 
+        // 3. Update database
         const updatedRoom = await Room.findByIdAndUpdate(
-            req.params.id,
+            roomId,
             { $set: updateData },
             { new: true }
         );
+
         res.status(200).json(updatedRoom);
     } catch (err) {
-        res.status(500).json(err);
+        console.error("Update Error:", err);
+        res.status(500).json({ message: "Internal Server Error", error: err.message });
     }
 };
 
