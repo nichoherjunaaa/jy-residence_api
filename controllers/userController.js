@@ -28,7 +28,6 @@ const getUser = async (req, res) => {
 // Di userController.js
 const googleAuthSuccess = async (req, res) => {
     try {
-        // PERBAIKAN: req.user biasanya adalah profil dari passport-google
         const email = req.user.emails[0].value;
         const name = req.user.displayName;
         const profilePic = req.user.photos ? req.user.photos[0].value : "";
@@ -40,7 +39,6 @@ const googleAuthSuccess = async (req, res) => {
                 name,
                 email,
                 profilePicture: profilePic,
-                // Gunakan password dummy yang lebih aman
                 password: await bcrypt.hash("oauth_" + Math.random(), 10),
                 role: "user"
             });
@@ -56,7 +54,7 @@ const googleAuthSuccess = async (req, res) => {
         res.redirect(`${process.env.CLIENT_URL}/login-success?token=${token}`);
     } catch (err) {
         console.error("Google Auth Error:", err);
-        res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_failed`);
+        res.redirect(`${process.env.CLIENT_URL}/login?error=auth_failed`);
     }
 };
 
