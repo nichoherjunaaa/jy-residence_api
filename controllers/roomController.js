@@ -2,7 +2,7 @@ const Room = require("../models/Room");
 const { put, del } = require('@vercel/blob');
 
 const createRoom = async (req, res) => {
-    // 1. Validasi input
+    console.log("Token yang terbaca:", process.env.BLOB_READ_WRITE_TOKEN ? "ADA" : "TIDAK ADA");
     if (!req.body.name || !req.body.price || !req.body.type || !req.body.capacity) {
         return res.status(400).json("Please fill all required fields!");
     }
