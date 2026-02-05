@@ -9,7 +9,7 @@ const upload = multer({
         fileSize: 4 * 1024 * 1024
     },
     fileFilter: (req, file, cb) => {
-        const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webm'];
+        const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.avif'];
         const ext = path.extname(file.originalname).toLowerCase();
 
         if (allowedExtensions.includes(ext)) {

@@ -53,12 +53,7 @@ const googleAuthSuccess = async (req, res) => {
             process.env.JWT_SECRET,
             { expiresIn: "5d" }
         );
-
-        // PERBAIKAN REDIRECT:
-        // Kirim token lewat query string agar Next.js bisa mengambilnya 
-        // dan menyimpannya di localStorage/Context
-        // Di userController.js backend
-        res.redirect(`http://localhost:3000/login-success?token=${token}`);
+        res.redirect(`${process.env.CLIENT_URL}/login-success?token=${token}`);
     } catch (err) {
         console.error("Google Auth Error:", err);
         res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_failed`);
